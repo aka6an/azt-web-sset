@@ -3,10 +3,10 @@ provider "azurerm" {
   # Whilst version is optional, we /strongly recommend/ using it to pin the version of the Provider being used
   version = "=1.33.1"
   # These variables are defined in the variables.tf file, which in turn pulls them from ENV variables
-  subscription_id = "${var.subscription_id}"
-  tenant_id       = "${var.tenant_id}"
-  client_id       = "${var.client_id}"
-  client_secret   = "${var.client_secret}"
+  subscription_id = var.subscription_id
+  tenant_id       = var.tenant_id
+  client_id       = var.client_id
+  client_secret   = var.client_secret
  }
 
 locals {
@@ -58,8 +58,8 @@ module "location_sc" {
 // Create Resource Group (RG) for Traffic Manager
  resource "azurerm_resource_group" "tfm_rg" {
      name = "${var.prefixes.TF}TFM-RG"
-     location = "${var.locations.NC}"
-     tags = "${merge(local.common_tags,local.extra_tags)}" 
+     location = var.locations.NC
+     tags = merge(local.common_tags,local.extra_tags) 
  }     
 
 // ****************************************************************************************
@@ -68,11 +68,11 @@ module "location_sc" {
 
 resource "azurerm_traffic_manager_profile" "tfm" {
     name = "${var.prefixes.TF}traffic-manager"
-    resource_group_name = "${azurerm_resource_group.tfm_rg.name}"
+    resource_group_name = azurerm_resource_group.tfm_rg.name
     traffic_routing_method = "Weighted"
 
     dns_config {
-        relative_name = "${var.domain_name_label}"
+        relative_name = var.domain_name_label
         ttl = 100
     }
 
@@ -85,18 +85,18 @@ resource "azurerm_traffic_manager_profile" "tfm" {
 
 resource "azurerm_traffic_manager_endpoint" "tfm_nc" {
         name = "${var.prefixes.TF}tfm-nc"
-        resource_group_name = "${azurerm_resource_group.tfm_rg.name}"
-        profile_name = "${azurerm_traffic_manager_profile.tfm.name}"
-        target_resource_id = "${module.location_nc.ws_public_ip_id}"
+        resource_group_name = azurerm_resource_group.tfm_rg.name
+        profile_name = azurerm_traffic_manager_profile.tfm.name
+        target_resource_id = module.location_nc.ws_public_ip_id
         type = "azureEndpoints"
         weight = 100
 }
 
 resource "azurerm_traffic_manager_endpoint" "tfm_sc" {
         name = "${var.prefixes.TF}tfm-sc"
-        resource_group_name = "${azurerm_resource_group.tfm_rg.name}"
-        profile_name = "${azurerm_traffic_manager_profile.tfm.name}"
-        target_resource_id = "${module.location_sc.ws_public_ip_id}"
+        resource_group_name = azurerm_resource_group.tfm_rg.name
+        profile_name = azurerm_traffic_manager_profile.tfm.name
+        target_resource_id = module.location_sc.ws_public_ip_id
         type = "azureEndpoints"
         weight = 100
 }
@@ -108,8 +108,8 @@ resource "azurerm_traffic_manager_endpoint" "tfm_sc" {
 // Create Resource Group (RG) for Jump Host
  resource "azurerm_resource_group" "jh_rg" {
      name = "${var.prefixes.TF}JH-RG"
-     location = "${var.locations.NC}"
-     tags = "${merge(local.common_tags,local.extra_tags)}" 
+     location = var.locations.NC
+     tags = merge(local.common_tags,local.extra_tags) 
  }     
 
 // ****************************************************************************************
@@ -118,52 +118,52 @@ resource "azurerm_traffic_manager_endpoint" "tfm_sc" {
 
 resource "azurerm_virtual_network" "jh_vnet" {
      name = "${var.prefixes.TF}JH-vnet"
-     location = "${var.locations.NC}"
-     resource_group_name = "${azurerm_resource_group.jh_rg.name}"
+     location = var.locations.NC
+     resource_group_name = azurerm_resource_group.jh_rg.name
      address_space = ["10.3.0.0/24"]
 }
  
 resource "azurerm_subnet" "jh_snet" {
      name = "${var.prefixes.TF}JH-snet"
-     resource_group_name = "${azurerm_resource_group.jh_rg.name}"
-     virtual_network_name = "${azurerm_virtual_network.jh_vnet.name}"
+     resource_group_name = azurerm_resource_group.jh_rg.name
+     virtual_network_name = azurerm_virtual_network.jh_vnet.name
      address_prefix = "10.3.0.0/24"
 }
 
 resource "azurerm_virtual_network_peering" "jh_nc_peer" {
     name = "jh-nc-peer"
-    resource_group_name = "${azurerm_resource_group.jh_rg.name}"
-    virtual_network_name = "${azurerm_virtual_network.jh_vnet.name}"
-    remote_virtual_network_id = "${module.location_nc.ws_vnet_id}"
+    resource_group_name = azurerm_resource_group.jh_rg.name
+    virtual_network_name = azurerm_virtual_network.jh_vnet.name
+    remote_virtual_network_id = module.location_nc.ws_vnet_id
     allow_virtual_network_access = true
-    depends_on = ["azurerm_subnet.jh_snet"]
+    depends_on = [azurerm_subnet.jh_snet]
 }
 
 resource "azurerm_virtual_network_peering" "nc_jh_peer" {
     name = "nc-jh-peer"
-    resource_group_name = "${module.location_nc.ws_rg_name}"
-    virtual_network_name = "${module.location_nc.ws_vnet_name}"
-    remote_virtual_network_id = "${azurerm_virtual_network.jh_vnet.id}"
+    resource_group_name = module.location_nc.ws_rg_name
+    virtual_network_name = module.location_nc.ws_vnet_name
+    remote_virtual_network_id = azurerm_virtual_network.jh_vnet.id
     allow_virtual_network_access = true
-    depends_on = ["azurerm_subnet.jh_snet"]
+    depends_on = [azurerm_subnet.jh_snet]
 }
 
 resource "azurerm_virtual_network_peering" "jh_sc_peer" {
     name = "jh-sc-peer"
-    resource_group_name = "${azurerm_resource_group.jh_rg.name}"
-    virtual_network_name = "${azurerm_virtual_network.jh_vnet.name}"
-    remote_virtual_network_id = "${module.location_sc.ws_vnet_id}"
+    resource_group_name = azurerm_resource_group.jh_rg.name
+    virtual_network_name = azurerm_virtual_network.jh_vnet.name
+    remote_virtual_network_id = module.location_sc.ws_vnet_id
     allow_virtual_network_access = true
-    depends_on = ["azurerm_subnet.jh_snet"]
+    depends_on = [azurerm_subnet.jh_snet]
 }
 
 resource "azurerm_virtual_network_peering" "sc_jh_peer" {
     name = "sc-jh-peer"
-    resource_group_name = "${module.location_sc.ws_rg_name}"
-    virtual_network_name = "${module.location_sc.ws_vnet_name}"
-    remote_virtual_network_id = "${azurerm_virtual_network.jh_vnet.id}"
+    resource_group_name = module.location_sc.ws_rg_name
+    virtual_network_name = module.location_sc.ws_vnet_name
+    remote_virtual_network_id = azurerm_virtual_network.jh_vnet.id
     allow_virtual_network_access = true
-    depends_on = ["azurerm_subnet.jh_snet"]
+    depends_on = [azurerm_subnet.jh_snet]
 }
 
 // ****************************************************************************************
@@ -172,29 +172,29 @@ resource "azurerm_virtual_network_peering" "sc_jh_peer" {
 
 resource "azurerm_network_interface" "jh_nic" {
     name = "${var.prefixes.TF}jh-nic"
-    location = "${var.locations.NC}"
-    resource_group_name = "${azurerm_resource_group.jh_rg.name}"
-    network_security_group_id = "${azurerm_network_security_group.jh_nsg.id}"
+    location = var.locations.NC
+    resource_group_name = azurerm_resource_group.jh_rg.name
+    network_security_group_id = azurerm_network_security_group.jh_nsg.id
 
     ip_configuration {
         name = "${var.prefixes.TF}jh-ip"
-        subnet_id = "${azurerm_subnet.jh_snet.id}"
+        subnet_id = azurerm_subnet.jh_snet.id
         private_ip_address_allocation = "dynamic"
-        public_ip_address_id = "${azurerm_public_ip.jh_public_ip.id}"
+        public_ip_address_id = azurerm_public_ip.jh_public_ip.id
   }
 }
 
 resource "azurerm_public_ip" "jh_public_ip" {
     name = "${var.prefixes.TF}jh-public-ip"
-    location = "${var.locations.NC}"
-    resource_group_name = "${azurerm_resource_group.jh_rg.name}"
-    allocation_method = "${var.environment == "production" ? "Static" : "Dynamic"}"
+    location = var.locations.NC
+    resource_group_name = azurerm_resource_group.jh_rg.name
+    allocation_method = var.environment == "production" ? "Static" : "Dynamic"
 }
 
 resource "azurerm_network_security_group" "jh_nsg" {
     name = "${var.prefixes.TF}jh-nsg"
-    location = "${var.locations.NC}"
-    resource_group_name = "${azurerm_resource_group.jh_rg.name}"
+    location = var.locations.NC
+    resource_group_name = azurerm_resource_group.jh_rg.name
 }
 
 resource "azurerm_network_security_rule" "jh_nsg_rule_rdp" {
@@ -207,15 +207,15 @@ resource "azurerm_network_security_rule" "jh_nsg_rule_rdp" {
   destination_port_range      = "3389"
   source_address_prefix       = "72.66.122.162/32"
   destination_address_prefix  = "*"
-  resource_group_name = "${azurerm_resource_group.jh_rg.name}"
-  network_security_group_name = "${azurerm_network_security_group.jh_nsg.name}" 
+  resource_group_name = azurerm_resource_group.jh_rg.name
+  network_security_group_name = azurerm_network_security_group.jh_nsg.name 
 }
 
 resource "azurerm_virtual_machine" "jh_server" {
     name = "${var.prefixes.TF}jh-01"
-    location = "${var.locations.NC}"
-    resource_group_name = "${azurerm_resource_group.jh_rg.name}"
-    network_interface_ids        = ["${azurerm_network_interface.jh_nic.id}"]
+    location = var.locations.NC
+    resource_group_name = azurerm_resource_group.jh_rg.name
+    network_interface_ids        = [azurerm_network_interface.jh_nic.id]
     vm_size                      = "Standard_B2s"
 
     storage_image_reference {
