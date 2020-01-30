@@ -27,43 +27,43 @@ locals {
 // Create Resource Group (RG)
  resource "azurerm_resource_group" "ws_rg" {
      name = "${var.prefixes}Web-RG"
-     location = "${var.locations}"
-     tags = "${merge(local.common_tags,local.extra_tags)}" 
+     location = var.locations
+     tags = merge(local.common_tags,local.extra_tags) 
  }     
 
 // Create Virtual Network (VNet)
  resource "azurerm_virtual_network" "ws_vnet" {
      name = "${var.prefixes}vnet"
-     location = "${var.locations}"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}"
-     address_space = ["${var.address_space}"]
+     location = var.locations
+     resource_group_name = azurerm_resource_group.ws_rg.name
+     address_space = [var.address_space]
  }
 
 // Create Subnets
  resource "azurerm_subnet" "ws_subnet" {
      name = "${var.prefixes}${var.ws_name}-${substr(var.ws_subnets[count.index],0,length(var.ws_subnets[count.index])-3)}-subnet"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}"
-     virtual_network_name = "${azurerm_virtual_network.ws_vnet.name}"
-     address_prefix = "${var.ws_subnets[count.index]}"
+     resource_group_name = azurerm_resource_group.ws_rg.name
+     virtual_network_name = azurerm_virtual_network.ws_vnet.name
+     address_prefix = var.ws_subnets[count.index]
 // [DEPRECATED] Use the `azurerm_subnet_network_security_group_association`, see line 83
 //     network_security_group_id = "${count.index == 0 ? "${azurerm_network_security_group.ws_nsg.id}" : ""}"
-     count = "${length(var.ws_subnets)}"
+     count = length(var.ws_subnets)
  }
 
 // Create Public IP (dynamic), it will be assigned to LB associated with Scale Set
  resource "azurerm_public_ip" "ws_public_ip" {
      name = "${var.prefixes}lb-public-ip"
-     location = "${var.locations}"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}"
-     allocation_method = "${var.environment != "production" ? "Static" : "Dynamic"}" 
-     domain_name_label = "${var.domain_name_label}"
+     location = var.locations
+     resource_group_name = azurerm_resource_group.ws_rg.name
+     allocation_method = var.environment != "production" ? "Static" : "Dynamic" 
+     domain_name_label = var.domain_name_label
  }
 
 // Create Network Security Group (NSG)
  resource "azurerm_network_security_group" "ws_nsg"{
      name = "${var.prefixes}nsg"
-     location = "${var.locations}"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}" 
+     location = var.locations
+     resource_group_name = azurerm_resource_group.ws_rg.name 
  } 
 
 // Create NSG Rule (Inbound HTTP, TCP/80)
@@ -77,26 +77,26 @@ locals {
      destination_port_range = "80"
      source_address_prefix = "*"
      destination_address_prefix = "*"
-     network_security_group_name = "${azurerm_network_security_group.ws_nsg.name}"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}" 
+     network_security_group_name = azurerm_network_security_group.ws_nsg.name
+     resource_group_name = azurerm_resource_group.ws_rg.name 
  }
 
  resource "azurerm_subnet_network_security_group_association" "snet_nsg" {
-     subnet_id = "${azurerm_subnet.ws_subnet[0].id}"
-     network_security_group_id = "${azurerm_network_security_group.ws_nsg.id}"
+     subnet_id = azurerm_subnet.ws_subnet[0].id
+     network_security_group_id = azurerm_network_security_group.ws_nsg.id
  }
 
 // Create scale set (web server)
  resource "azurerm_virtual_machine_scale_set" "ws_ss" {
      name = "${var.prefixes}${local.ws_name}-sset"
-     location = "${var.locations}"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}"
+     location = var.locations
+     resource_group_name = azurerm_resource_group.ws_rg.name
      upgrade_policy_mode = "manual"
 
      sku {
          name = "Standard_B1s"
          tier = "Standard"
-         capacity = "${var.ws_count}"
+         capacity = var.ws_count
 
      }
 
@@ -131,8 +131,8 @@ locals {
          ip_configuration {
              name = "${var.prefixes}${local.ws_name}"
              primary = true
-             subnet_id = "${azurerm_subnet.ws_subnet.*.id[0]}"
-             load_balancer_backend_address_pool_ids = ["${azurerm_lb_backend_address_pool.ws_lb_backend_pool.id}"]
+             subnet_id = azurerm_subnet.ws_subnet.*.id[0]
+             load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.ws_lb_backend_pool.id]
          }
      }
 
@@ -155,27 +155,27 @@ locals {
 // Create load balancer
  resource "azurerm_lb" "ws_lb"{
      name = "${var.prefixes}lb"
-     location = "${var.locations}"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}"   
+     location = var.locations
+     resource_group_name = azurerm_resource_group.ws_rg.name   
 
      frontend_ip_configuration {
          name = "${var.prefixes}lb-frontend-ip"
-         public_ip_address_id = "${azurerm_public_ip.ws_public_ip.id}"
+         public_ip_address_id = azurerm_public_ip.ws_public_ip.id
      }
  }
 
 // Create load balancer back-end pool
  resource "azurerm_lb_backend_address_pool" "ws_lb_backend_pool" {
      name = "${var.prefixes}lb-backend-pool"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}"
-     loadbalancer_id = "${azurerm_lb.ws_lb.id}"   
+     resource_group_name = azurerm_resource_group.ws_rg.name
+     loadbalancer_id = azurerm_lb.ws_lb.id   
  }
 
 // Create load balancer health probe
  resource "azurerm_lb_probe" "ws_lb_probe" {
      name = "${var.prefixes}lb-probe"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}"
-     loadbalancer_id = "${azurerm_lb.ws_lb.id}"   
+     resource_group_name = azurerm_resource_group.ws_rg.name
+     loadbalancer_id = azurerm_lb.ws_lb.id   
      protocol = "tcp"
      port = "80"
  }
@@ -183,12 +183,12 @@ locals {
 // Create load balancer rule
  resource "azurerm_lb_rule" "ws_lb_rule" {
      name = "${var.prefixes}lb-rule"
-     resource_group_name = "${azurerm_resource_group.ws_rg.name}"
-     loadbalancer_id = "${azurerm_lb.ws_lb.id}"   
+     resource_group_name = azurerm_resource_group.ws_rg.name
+     loadbalancer_id = azurerm_lb.ws_lb.id   
      protocol = "tcp"
      frontend_port = "80"
      backend_port = "80"
      frontend_ip_configuration_name = "${var.prefixes}lb-frontend-ip"
-     probe_id = "${azurerm_lb_probe.ws_lb_probe.id}"
-     backend_address_pool_id = "${azurerm_lb_backend_address_pool.ws_lb_backend_pool.id}"
+     probe_id = azurerm_lb_probe.ws_lb_probe.id
+     backend_address_pool_id = azurerm_lb_backend_address_pool.ws_lb_backend_pool.id
  }
