@@ -5,7 +5,7 @@ variable  "client_id" {}
 variable  "client_secret" {}
 
 variable "locations" {
-    type = "map"
+    type = map(string)
     default = {
         NC = "northcentralus"
         SC = "southcentralus"
@@ -14,7 +14,7 @@ variable "locations" {
 }
 
 variable "prefixes" {
-    type = "map"
+    type = map(string)
     default = {
         TF = "TF-"
         NC = "TF-NC-"
@@ -28,7 +28,7 @@ variable "nc_address_space" {
 } 
 
 variable "nc_ws_subnets" {
-    type = "list"
+    type = list(string)
     default = ["10.0.1.0/24","10.0.2.0/24"]
 }
 
@@ -37,7 +37,7 @@ variable "sc_address_space" {
 } 
 
 variable "sc_ws_subnets" {
-    type = "list"
+    type = list(string)
     default = ["10.1.1.0/24","10.1.2.0/24"]
 }
 
