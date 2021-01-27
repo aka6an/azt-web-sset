@@ -1,8 +1,6 @@
 // Basic setup (provider, version, credentials)
 provider "azurerm" {
-  # Whilst version is optional, we /strongly recommend/ using it to pin the version of the Provider being used
-  version = "=1.33.1"
-  # These variables are defined in the variables.tf file, which in turn pulls them from ENV variables
+//  version = ">=2.00.0"
   subscription_id = var.subscription_id
   tenant_id       = var.tenant_id
   client_id       = var.client_id
@@ -10,7 +8,7 @@ provider "azurerm" {
  }
 
 locals {
-    ws_name = "${var.environment != "production" ? "${var.ws_name}-dev" : "${var.ws_name}"}"
+    ws_name = var.environment != "production" ? "${var.ws_name}-dev" : var.ws_name
 
     common_tags = {
         ct1-Application = "WebApp-01"
@@ -20,35 +18,35 @@ locals {
     }
     
     extra_tags = {
-        et1-ENV = "${var.environment != "production" ? "DEV" : "PROD"}"
-        et2-BUILD = "${var.tf_script_version}"
+        et1-ENV = var.environment != "production" ? "DEV" : "PROD"
+        et2-BUILD = var.tf_script_version
     }
 }
 
 module "location_nc" {
     source = "./location"
-    tf_script_version = "${var.tf_script_version}"
-    environment = "${var.environment}"
-    prefixes = "${var.prefixes.NC}"
-    locations = "${var.locations.NC}"
-    ws_name = "${var.ws_name}"
-    ws_count = "${var.ws_count}"
-    address_space = "${var.nc_address_space}"
-    ws_subnets = "${var.nc_ws_subnets}"
-    domain_name_label = "${var.domain_name_label}"
+    tf_script_version = var.tf_script_version
+    environment = var.environment
+    prefixes = var.prefixes.NC
+    locations = var.locations.NC
+    ws_name = var.ws_name
+    ws_count = var.ws_count
+    address_space = var.nc_address_space
+    ws_subnets = var.nc_ws_subnets
+    domain_name_label = var.domain_name_label
 }
 
 module "location_sc" {
     source = "./location"
-    tf_script_version = "${var.tf_script_version}"
-    environment = "${var.environment}"
-    prefixes = "${var.prefixes.SC}"
-    locations = "${var.locations.SC}"
-    ws_name = "${var.ws_name}"
-    ws_count = "${var.ws_count}"
-    address_space = "${var.sc_address_space}"
-    ws_subnets = "${var.sc_ws_subnets}"
-    domain_name_label = "${var.domain_name_label}"
+    tf_script_version = var.tf_script_version
+    environment = var.environment
+    prefixes = var.prefixes.SC
+    locations = var.locations.SC
+    ws_name = var.ws_name
+    ws_count = var.ws_count
+    address_space = var.sc_address_space
+    ws_subnets = var.sc_ws_subnets
+    domain_name_label = var.domain_name_label
 }
 
 // ****************************************************************************************
