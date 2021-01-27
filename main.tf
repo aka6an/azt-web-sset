@@ -125,7 +125,7 @@ resource "azurerm_subnet" "jh_snet" {
      name = "${var.prefixes.TF}JH-snet"
      resource_group_name = azurerm_resource_group.jh_rg.name
      virtual_network_name = azurerm_virtual_network.jh_vnet.name
-     address_prefix = "10.3.0.0/24"
+     address_prefixes = ["10.3.0.0/24"]
 }
 
 resource "azurerm_virtual_network_peering" "jh_nc_peer" {
