@@ -9,7 +9,7 @@ variable "ws_subnets" {}
 variable "domain_name_label" {}
 
 locals {
-    ws_name = "${var.environment != "production" ? "${var.ws_name}-dev" : "${var.ws_name}"}"
+    ws_name = var.environment != "production" ? "${var.ws_name}-dev" : var.ws_name
 
     common_tags = {
         ct1-Application = "WebApp-01"
@@ -19,8 +19,8 @@ locals {
     }
     
     extra_tags = {
-        et1-ENV = "${var.environment != "production" ? "DEV" : "PROD"}"
-        et2-BUILD = "${var.tf_script_version}"
+        et1-ENV = var.environment != "production" ? "DEV" : "PROD"
+        et2-BUILD = var.tf_script_version
     }
 }
 
