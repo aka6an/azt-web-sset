@@ -44,7 +44,7 @@ locals {
      name = "${var.prefixes}${var.ws_name}-${substr(var.ws_subnets[count.index],0,length(var.ws_subnets[count.index])-3)}-subnet"
      resource_group_name = azurerm_resource_group.ws_rg.name
      virtual_network_name = azurerm_virtual_network.ws_vnet.name
-     address_prefix = var.ws_subnets[count.index]
+     address_prefixes = [var.ws_subnets[count.index]]
 // [DEPRECATED] Use the `azurerm_subnet_network_security_group_association`, see line 83
 //     network_security_group_id = "${count.index == 0 ? "${azurerm_network_security_group.ws_nsg.id}" : ""}"
      count = length(var.ws_subnets)
