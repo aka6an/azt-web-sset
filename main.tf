@@ -1,11 +1,14 @@
-// Basic setup (provider, version, credentials)
+# Configure the Microsoft Azure Resource Manager (ARM) Provider
 provider "azurerm" {
-//  version = ">=2.00.0"
+//  version = ">=2.0.0"
+  features {}
+
+# These variables are defined in the variables.tf file, which in turn pulls them from ENV variables
   subscription_id = var.subscription_id
   tenant_id       = var.tenant_id
   client_id       = var.client_id
   client_secret   = var.client_secret
- }
+}
 
 locals {
     ws_name = var.environment != "production" ? "${var.ws_name}-dev" : var.ws_name
@@ -172,8 +175,7 @@ resource "azurerm_network_interface" "jh_nic" {
     name = "${var.prefixes.TF}jh-nic"
     location = var.locations.NC
     resource_group_name = azurerm_resource_group.jh_rg.name
-    network_security_group_id = azurerm_network_security_group.jh_nsg.id
-
+    
     ip_configuration {
         name = "${var.prefixes.TF}jh-ip"
         subnet_id = azurerm_subnet.jh_snet.id
@@ -182,17 +184,23 @@ resource "azurerm_network_interface" "jh_nic" {
   }
 }
 
+resource "azurerm_network_security_group" "jh_nsg" {
+    name = "${var.prefixes.TF}jh-nsg"
+    location = var.locations.NC
+    resource_group_name = azurerm_resource_group.jh_rg.name
+}
+
+resource "azurerm_network_interface_security_group_association" "nic_nsg" {
+    network_interface_id      = azurerm_network_interface.jh_nic.id
+    network_security_group_id = azurerm_network_security_group.jh_nsg.id
+}
+
+
 resource "azurerm_public_ip" "jh_public_ip" {
     name = "${var.prefixes.TF}jh-public-ip"
     location = var.locations.NC
     resource_group_name = azurerm_resource_group.jh_rg.name
     allocation_method = var.environment == "production" ? "Static" : "Dynamic"
-}
-
-resource "azurerm_network_security_group" "jh_nsg" {
-    name = "${var.prefixes.TF}jh-nsg"
-    location = var.locations.NC
-    resource_group_name = azurerm_resource_group.jh_rg.name
 }
 
 resource "azurerm_network_security_rule" "jh_nsg_rule_rdp" {
